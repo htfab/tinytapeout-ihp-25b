@@ -15,8 +15,8 @@ jobs:
   gds:
     env:
       PYTHONIOENCODING: utf-8
+      PDK: ihp-sg13g2
       PDK_ROOT: ${{ github.workspace }}/pdk
-      TT_CONFIG: sky130.yaml
       # Uncomment the following line to build only the specified projects:
       #TT_ONLY_PROJECTS: tt_um_chip_rom,tt_um_factory_test
 
@@ -40,14 +40,17 @@ jobs:
       - name: Checkout OpenLane 2 repo
         uses: actions/checkout@v4
         with:
-          repository: efabless/openlane2
+          repository: TinyTapeout/openlane2
           path: openlane2
-          ref: ${{ env.OPENLANE_TAG }}
+          ref: ihp
 
-      - name: Patch OpenLane 2 repo
-        working-directory: openlane2
-        run:
-          git apply --allow-empty ../patches/openlane2.patch
+      - name: Checkout IHP PDK
+        uses: actions/checkout@v4
+        with:
+          repository: TinyTapeout/IHP-Open-PDK
+          path: ${{ env.PDK_ROOT }}
+          ref: tt2025
+          submodules: recursive
 
       - name: Update caravel configuration
         run: python ./tt/configure.py --update-shuttle
@@ -60,43 +63,9 @@ jobs:
           extraPullNames: ${{ vars.CACHIX_CACHE_EXTRA || 'openlane' }}
           authToken: ${{ secrets.CACHIX_TOKEN }}
 
-      - name: Install Sky130 PDK
-        uses: TinyTapeout/volare-action@v2
-        with:
-          pdk_name: sky130
-          pdk_version: ${{ env.SKY130_PDK_VERSION }}
-          pdk_root: ${{ env.PDK_ROOT }}
-
-      # Patch all digital projects to work around the poly density issue
-      - name: Patch projects for poly density issue
-        working-directory: projects
-        run: |
-          for project in tt_um_*; do
-            if [ "$project" = "tt_um_chip_rom" ]; then
-              continue
-            fi
-
-            # Skip projects that were not built with OpenLane2 (e.g. analog and mixed-signal projects)
-            if [[ "$(jq -r '.openlane_version' $project/commit_id.json)" != "OpenLane2 2"* ]]; then
-              continue
-            fi
-
-            if [ -f $project/$project.gds.br ]; then
-              brotli -jd $project/$project.gds.br
-            fi
-            
-            if [ -f $project/$project.gds ]; then
-              python ../sky130_density_fix/replace_decap.py --design $project --user-gds $project/$project.gds --replacement-gds ../sky130_density_fix/sky130_ef_sc_hd__newfill_12.gds | tee -a ../tt-multiplexer/ol2/tt_top/gds/replace_decap.log
-            fi
-
-            if [ -f $project/$project.oas ]; then
-              python ../sky130_density_fix/replace_decap.py --design $project --user-gds $project/$project.oas --replacement-gds ../sky130_density_fix/sky130_ef_sc_hd__newfill_12.gds | tee -a ../tt-multiplexer/ol2/tt_top/gds/replace_decap.log
-            fi
-          done
-
       # run OpenLane to build the GDS
       - name: Harden Chip ROM
-        run: nix-shell $GITHUB_WORKSPACE/openlane2/shell.nix --run "python -m openlane tt/rom/config.json"
+        run: nix-shell $GITHUB_WORKSPACE/openlane2/shell.nix --run "python -m openlane --pdk-root $PDK_ROOT --manual-pdk --pdk $PDK tt/rom/config_ihp.json"
 
       - name: Harden tt_ctrl
         working-directory: tt-multiplexer/ol2/tt_ctrl
@@ -111,16 +80,16 @@ jobs:
 
       - name: Harden tt_top
         working-directory: tt-multiplexer/ol2/tt_top
-        run: nix-shell $GITHUB_WORKSPACE/openlane2/shell.nix --run "python build.py --skip-xor-checks"
+        run: nix-shell $GITHUB_WORKSPACE/openlane2/shell.nix --run "python build.py"
 
       - name: Copy final results
         run: python ./tt/configure.py --copy-final-results
 
-      - name: Create eFabless submission
-        run: python ./tt/configure.py --create-efabless-submission
+      - name: Create IHP submission
+        run: python ./tt/configure.py --create-ihp-submission
 
-      - name: Patch GL power pin assignments
-        run: sed -i 's/^ assign \(v[a-z0-9]*\) = \(v[a-z]*\);$/ assign \1 = \2; assign \2 = \1;/' efabless/verilog/gl/openframe_project_wrapper.v
+      #- name: Patch GL power pin assignments
+      #  run: sed -i 's/^ assign \(v[a-z0-9]*\) = \(v[a-z]*\);$/ assign \1 = \2; assign \2 = \1;/' ihp/verilog/gl/tt_ihp_wrapper.v
 
       - name: upload GDS artifact
         if: success() || failure()
@@ -150,11 +119,11 @@ jobs:
           name: shuttle_index
           path: shuttle_index.json
 
-      - name: upload Efabless submission directory
+      - name: upload IHP submission directory
         uses: actions/upload-artifact@v4
         with:
-          name: efabless_submission
-          path: efabless
+          name: ihp_submission
+          path: ihp
 
       # Install iverilog, cocotb (required for GL test)
       - name: install oss-cad-suite
