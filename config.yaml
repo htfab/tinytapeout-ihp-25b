@@ -4,4 +4,4 @@ end_date: '2025-03-21'
 project_dir: 'projects'
 top_level_macro: 'tt_ihp_wrapper'
 powered_netlists: false
-no_power_gating: true
+no_power_gating: false
