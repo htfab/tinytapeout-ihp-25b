@@ -9,16 +9,14 @@ else
 endif
 
 export USER_PROJECT_VERILOG := $(abspath ../../../verilog)
-export EFABLESS_SUBMISSION = $(abspath ../../../efabless/)
+export IHP_SUBMISSION = $(abspath ../../../ihp/)
 export TT_GL_VERILOG := $(abspath ../../../tt-multiplexer/ol2/tt_top/verilog/)
 
 SIM           ?= icarus
-WAVES         ?= no
+WAVES         ?= yes
 TOPLEVEL      ?= test_mux_tb
 MODULE        ?= test_mux
 TOPLEVEL_LANG ?= verilog
-COMPILE_ARGS  += -DMPRJ_IO_PADS=44
-COMPILE_ARGS  += -DSIM
 COMPILE_ARGS  += -DSIM_$(shell echo $(SIM) | tr a-z A-Z)=1
 COMPILE_ARGS  += -DROM_VMEM_PATH=\"../../../tt/rom/rom.vmem\"
 
@@ -50,15 +48,16 @@ ifeq ($(GATES),yes)
   COMPILE_ARGS    += -i -f $(abspath ../../includes/includes.gl.mux_top)
   COMPILE_ARGS    += -DGL_TEST
   COMPILE_ARGS    += -DFUNCTIONAL
-  COMPILE_ARGS    += -DUNIT_DELAY=\#1
-  COMPILE_ARGS    += -DUSE_POWER_PINS
-  VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
-  VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
+  COMPILE_ARGS    += -DSIM
+  VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v
   SIM_BUILD       := sim_build_gates
 else
+  COMPILE_ARGS    += -DRTL_TESTBENCH
   COMPILE_ARGS    += -f $(abspath ../../includes/includes.rtl.caravel_user_project) -I $(abspath ../../rtl/tt-multiplexer/rtl)
-  VERILOG_SOURCES += $(abspath ../../rtl/fast/sky130_fd_sc_hd_fast.v)
 endif
+
+# IO cell library is relevent for both RTL / GL sims
+VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_io/verilog/sg13g2_io.v
 
 # Standard sources
 VERILOG_SOURCES += $(abspath test_mux_tb.v)
@@ -73,9 +72,9 @@ include $(shell cocotb-config --makefiles)/Makefile.sim
 # ==============================================================================
 
 .PHONY: test_mux
-test_mux: TESTCASE=test_mux,test_rom
+test_mux: TESTCASE=test_factory_test,test_rom
 test_mux: $(COCOTB_RESULTS_FILE)
 
 .PHONY: test_mux_gl
-test_mux_gl: TESTCASE=test_mux,test_rom
+test_mux_gl: TESTCASE=test_factory_test,test_rom
 test_mux_gl: $(COCOTB_RESULTS_FILE)

@@ -3,35 +3,17 @@
 module test_mux_tb (
     // the user module's interface
     input wire clk,
-    input wire reset_n,
+    input wire rst_n,
     input wire [7:0] ui_in,
     output wire [7:0] uo_out,
-    input wire [7:0] uio_in,  // IOs: Input path
-    output wire [7:0] uio_out,  // IOs: Output path
+    inout wire [7:0] uio_in,
+    output wire [7:0] uio_out,
 
     // control interface
     input wire ctrl_sel_rst_n,
     input wire ctrl_sel_inc,
     input wire ctrl_ena
 );
-
-  // signals for openframe_project_wrapper
-  reg  [`MPRJ_IO_PADS-1:0] io_in;
-  wire [`MPRJ_IO_PADS-1:0] io_out;
-  wire [`MPRJ_IO_PADS-1:0] io_oeb;
-
-  assign io_in[23:16] = uio_in[7:0];
-  assign uio_out[7:0] = io_out[23:16];
-
-  assign io_in[14]    = clk;
-  assign io_in[15]    = reset_n;
-  assign io_in[13]    = ui_in[7];
-  assign io_in[6:0]   = ui_in[6:0];
-  assign uo_out[7:0]  = io_out[31:24];
-
-  assign io_in[40]    = ctrl_sel_rst_n;
-  assign io_in[39]    = ctrl_sel_inc;
-  assign io_in[38]    = ctrl_ena;
 
 `ifdef SIM_ICARUS
   initial begin
@@ -47,36 +29,17 @@ module test_mux_tb (
   end
 `endif
 
-  wire [43:0] gpio_in;
-  wire [43:0] gpio_out;
-  wire [43:0] gpio_oeb;
-  wire [43:0] gpio_inp_dis;
-  wire [43:0] gpio_dm2;
-  wire [43:0] gpio_dm1;
-  wire [43:0] gpio_dm0;
+  wire [63:0] pad_raw;
+  assign pad_raw[0] = ctrl_ena;
+  assign pad_raw[1] = ctrl_sel_inc;
+  assign pad_raw[2] = ctrl_sel_rst_n;
+  assign uo_out = pad_raw[15:8];
+  assign pad_raw[39:32] = uio_in;
+  assign uio_out = pad_raw[39:32];
+  assign pad_raw[47:40] = ui_in;
+  assign pad_raw[48] = rst_n;
+  assign pad_raw[49] = clk;
 
-  assign gpio_in = io_in;
-  assign io_out  = gpio_out & ~gpio_oeb & gpio_dm2 & gpio_dm1;
-  assign io_oeb  = gpio_oeb;
-  wire [43:0] inp_ena = (gpio_dm0 | gpio_dm1 | gpio_dm2) & ~gpio_inp_dis;
-
-  wire vccd1 = 1'b1;
-  wire vssd1 = 1'b0;
-
-  openframe_project_wrapper user_project_wrapper (
-`ifdef GL_TEST
-      .vccd1             (vccd1),
-      .vssd1             (vssd1),
-`endif
-      .gpio_loopback_zero({44{1'b0}}),
-      .gpio_loopback_one ({44{1'b1}}),
-      .gpio_in           (gpio_in & inp_ena),
-      .gpio_out          (gpio_out),
-      .gpio_oeb          (gpio_oeb),
-      .gpio_inp_dis      (gpio_inp_dis),
-      .gpio_dm2          (gpio_dm2),
-      .gpio_dm1          (gpio_dm1),
-      .gpio_dm0          (gpio_dm0)
-  );
+  tt_ihp_wrapper tt (.pad_raw(pad_raw));
 
 endmodule

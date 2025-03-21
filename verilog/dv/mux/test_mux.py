@@ -1,4 +1,5 @@
 import cocotb
+from cocotb.types import LogicArray
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 import re
@@ -28,39 +29,40 @@ async def enable_design(dut, mux_addr):
 
 
 @cocotb.test()
-async def test_mux(dut):
+async def test_factory_test(dut):
     clock = Clock(dut.clk, 100, units="ns")  # 10 MHz
     cocotb.start_soon(clock.start())
 
-    dut.uio_in.value = 0
+    dut.uio_in.value = LogicArray("Z" * 8)
     dut.ui_in.value = 0
     # select test design
-    dut.reset_n.value = 0
+    dut.rst_n.value = 0
     await enable_design(dut, 1)
 
     # with bit 0 of ui_in set to 0, module will copy inputs to outputs
     dut.ui_in.value = 0b0
     await ClockCycles(dut.clk, 5)  # wait until the wait state config is read
-    dut.reset_n.value = 1
+    dut.rst_n.value = 1
 
     dut._log.info("test loopback")
     for i in range(256):
-        dut.uio_in.value = i
+        dut.uio_in.value = i ^ 0x55
         await ClockCycles(dut.clk, 1)
-        assert dut.uo_out.value == i
+        assert dut.uo_out.value == i ^ 0x55
 
     # with bit 0 of ui_in set to 1, module will enable bidirectional outputs and put a counter on both output and bidirectional output
     dut.ui_in.value = 0b1
 
     # reset it
-    dut.reset_n.value = 0
+    dut.rst_n.value = 0
+    dut.uio_in.value = LogicArray("Z" * 8)
     await ClockCycles(dut.clk, 5)  # wait until the wait state config is read
-    dut.reset_n.value = 1
+    dut.rst_n.value = 1
     await ClockCycles(dut.clk, 2)  # sync
 
     dut._log.info("test counter")
     for i in range(256):
-        assert dut.uo_out.value == dut.uio_out.value
+        assert dut.uo_out.value == dut.uio_out.value.integer
         assert dut.uo_out.value == i
         await ClockCycles(dut.clk, 1)  # wait until the wait state config is read
 
@@ -70,14 +72,14 @@ async def test_rom(dut):
     clock = Clock(dut.clk, 100, units="ns")  # 10 MHz
     cocotb.start_soon(clock.start())
 
-    dut.uio_in.value = 0
+    dut.uio_in.value = LogicArray("Z" * 8)
     dut.ui_in.value = 0
     # select ROM design
-    dut.reset_n.value = 0
+    dut.rst_n.value = 0
     await enable_design(dut, 0)
 
     await ClockCycles(dut.clk, 1)
-    dut.reset_n.value = 1
+    dut.rst_n.value = 1
     await ClockCycles(dut.clk, 1)
 
     dut._log.info("Read ROM, addressing with ui_in (rst_n=1)")
@@ -85,14 +87,14 @@ async def test_rom(dut):
     for byte_idx in range(len(rom_data)):
         dut.ui_in.value = byte_idx
         await ClockCycles(dut.clk, 1)
-        rom_data[byte_idx] = dut.uo_out.value
+        rom_data[byte_idx] = dut.uo_out.value.integer
 
     dut._log.info(f"Read ROM, addressing sequentially (rst_n=0)")
-    dut.reset_n.value = 0
+    dut.rst_n.value = 0
     rom_data_seq = bytearray(256)
     for byte_idx in range(len(rom_data_seq)):
         await ClockCycles(dut.clk, 1)
-        rom_data_seq[byte_idx] = dut.uo_out.value
+        rom_data_seq[byte_idx] = dut.uo_out.value.integer
 
     text = rom_data[32:128].rstrip(b"\0").decode("ascii")
     items = {}

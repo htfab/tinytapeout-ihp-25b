@@ -96,9 +96,6 @@ jobs:
       - name: Create IHP submission
         run: python ./tt/configure.py --create-ihp-submission
 
-      #- name: Patch GL power pin assignments
-      #  run: sed -i 's/^ assign \(v[a-z0-9]*\) = \(v[a-z]*\);$/ assign \1 = \2; assign \2 = \1;/' ihp/verilog/gl/tt_ihp_wrapper.v
-
       - name: upload GDS artifact
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -133,28 +130,31 @@ jobs:
           name: ihp_submission
           path: ihp
 
-      ## Install iverilog, cocotb (required for GL test)
-      #- name: install oss-cad-suite
-      #  uses: YosysHQ/setup-oss-cad-suite@v3
-      #  with:
-      #    version: '2023-05-27'
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
+      # Install iverilog, cocotb (required for GL test)
+      - name: install oss-cad-suite
+        uses: YosysHQ/setup-oss-cad-suite@v3
+        with:
+          version: '2024-10-21'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      #- name: GL simulation
-      #  working-directory: verilog/dv/mux
-      #  env:
-      #    EXPECTED_REPO: ${{ github.repository }}
-      #  run: |
-      #    make clean test_mux_gl
-      #    # make will return success even if the test fails, so check for failure in the results.xml
-      #    ! grep failure results.xml
+      - name: GL simulation
+        working-directory: verilog/dv/mux
+        env:
+          EXPECTED_REPO: ${{ github.repository }}
+        run: |
+          # temporary workaround for missing bits in pad_raw:
+          sed -i 's/inout \[49:0\] pad_raw/inout [63:0] pad_raw/' ../../../ihp/verilog/gl/tt_ihp_wrapper.nl.v
 
-      #- name: upload GL test results
-      #  if: success() || failure()
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: gl_test_vcd
-      #    path: |
-      #      verilog/dv/mux/results.xml
-      #      verilog/dv/mux/test_mux.vcd
-      #      verilog/dv/mux/test_mux.gtkw
+          make clean test_mux_gl
+          # make will return success even if the test fails, so check for failure in the results.xml
+          ! grep failure results.xml
+
+      - name: upload GL test results
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gl_test_vcd
+          path: |
+            verilog/dv/mux/results.xml
+            verilog/dv/mux/test_mux.vcd
+            verilog/dv/mux/test_mux.gtkw
