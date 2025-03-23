@@ -1,0 +1,3 @@
+tmp/*.gds
+drc_report.log
+drc_report.xml
