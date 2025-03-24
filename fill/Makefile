@@ -2,10 +2,13 @@ SRC = ../ihp/gds/tt_ihp_wrapper.gds
 FINAL_GDS = ../ihp/gds/tt_ihp_wrapper_final.gds
 LOGO_PNG = logo/shuttle_logo.png
 TMP_DIR = tmp
+KLAYOUT_CMD ?= klayout
 
-.PHONY: all clean check
+.PHONY: all clean check fill klayout_test
 
 all: check
+
+fill: $(FINAL_GDS)
 
 $(TMP_DIR):
 	mkdir -p $(TMP_DIR)
@@ -18,22 +21,22 @@ $(TMP_DIR)/step-simplify.gds: $(SRC) | $(TMP_DIR)
 $(TMP_DIR)/step-logo.gds: $(SRC) $(LOGO_PNG) | $(TMP_DIR)
 	python3 ./ihp_add_logo.py $< $@
 
-# Step 3: Fill Poly+Active and Metal1
+# Step 3: Fill Poly+Active
 $(TMP_DIR)/step-fill1.gds: $(TMP_DIR)/step-simplify.gds | $(TMP_DIR)
-	klayout -b -zz \
+	$(KLAYOUT_CMD) -b -zz \
 		-r ${PDK_ROOT}/${PDK}/libs.tech/klayout/tech/scripts/filler.py \
 		-rd output_file=$@ \
+		-rd no_metal1 \
 		-rd no_metal25 \
 		-rd no_topmetal \
 		$<
 
-# Step 4: Fill Metal2-5, TopMetal1-2
+# Step 4: Fill Metal1-5, TopMetal1-2
 $(TMP_DIR)/step-fill2.gds: $(TMP_DIR)/step-logo.gds | $(TMP_DIR)
-	klayout -b -zz \
+	$(KLAYOUT_CMD) -b -zz \
 		-r ${PDK_ROOT}/${PDK}/libs.tech/klayout/tech/scripts/filler.py \
 		-rd output_file=$@ \
 		-rd no_activ \
-		-rd no_metal1 \
 		$<
 
 # Step 5: Combine fills
@@ -42,11 +45,11 @@ $(FINAL_GDS): $(TMP_DIR)/step-fill2.gds $(TMP_DIR)/step-fill1.gds | $(TMP_DIR)
 
 # Step 6: Run DRC check
 drc_report.log: $(FINAL_GDS)
-	klayout -b -zz \
+	$(KLAYOUT_CMD) -b -zz \
 		-r sg13g2_density.lydrc \
 		-rd in_gds=$< \
 		-rd cell=tt_ihp_wrapper \
-		-rd report_file=$@ \
+		-rd report_file=drc_report.xml \
 		-rd threads=16 | tee drc_report.log
 
 check: drc_report.log
