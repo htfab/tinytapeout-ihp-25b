@@ -54,20 +54,20 @@ jobs:
       - name: Run DRC check
         working-directory: tinytapeout-submission
         run: |
-          klayout -b -r ${{ env.TO_REPO_ROOT }}/drc/drc.lydrc -rd "in_gds"="gds/tt_ihp_wrapper.gds" -rd "report_file"="tt_ihp_wrapper.gds.lyrdb" 2>&1 | tee tt_ihp_wrapper.gds.log
+          klayout -b -r ${{ env.TO_REPO_ROOT }}/drc/drc.lydrc -rd "in_gds"="gds/tt_ihp_wrapper_final.gds" -rd "report_file"="tt_ihp_wrapper_final.gds.lyrdb" 2>&1 | tee tt_ihp_wrapper_final.gds.log
           if [ $? -ne 0 ]; then
             echo "❌ DRC check failed" | tee -a $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-          if [ ! -f "tt_ihp_wrapper.gds.lyrdb" ]; then
+          if [ ! -f "tt_ihp_wrapper_final.gds.lyrdb" ]; then
             echo "❌ DRC report file not found" | tee -a $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-          if ! grep -q "Number of DRC errors: 0" tt_ihp_wrapper.gds.log; then
+          if ! grep -q "Number of DRC errors: 0" tt_ihp_wrapper_final.gds.log; then
             echo "## ❌ DRC errors found in the design" | tee -a $GITHUB_STEP_SUMMARY
-            grep "Number of DRC errors:" tt_ihp_wrapper.gds.log | tee -a $GITHUB_STEP_SUMMARY
+            grep "Number of DRC errors:" tt_ihp_wrapper_final.gds.log | tee -a $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
@@ -79,5 +79,69 @@ jobs:
         with:
           name: precheck_results
           path: |
-            tinytapeout-submission/tt_ihp_wrapper.gds.lyrdb
-            tinytapeout-submission/tt_ihp_wrapper.gds.log
+            tinytapeout-submission/tt_ihp_wrapper_final.gds.lyrdb
+            tinytapeout-submission/tt_ihp_wrapper_final.gds.log
+
+  density_check:
+    env:
+      PDK_ROOT: ${{ github.workspace }}/pdk
+      PDK: ihp-sg13g2
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install KLayout
+        shell: bash
+        run: |
+          wget https://github.com/TinyTapeout/klayout/releases/download/v0.29.11/klayout_0.29.11-1_amd64.deb
+          sudo apt-get update && sudo apt-get install -y ./klayout_0.29.11-1_amd64.deb
+
+      - name: Download artifact (run id = ${{ github.event.workflow_run.id }})
+        uses: dawidd6/action-download-artifact@v6
+        id: download_artifact
+        with:
+          workflow: gds.yaml
+          run_id: ${{ github.event.workflow_run.id }}
+          workflow_conclusion: success
+          name: ihp_submission
+          path: ihp
+
+      - name: Run Density check
+        working-directory: ihp
+        run: |
+          klayout -b -zz \
+            -r ../fill/sg13g2_density.lydrc \
+            -rd in_gds=gds/tt_ihp_wrapper_final.gds \
+            -rd cell=tt_ihp_wrapper \
+            -rd report_file=density_report.xml \
+            -rd threads=16 | tee density_report.log
+
+          if [ $? -ne 0 ]; then
+            echo "❌ Density check failed" | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          if [ ! -f "density_report.xml" ]; then
+            echo "❌ Density report file not found" | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          if ! grep -q "Number of DRC errors: 0" density_report.log; then
+            echo "## ❌ Density errors found in the design" | tee -a $GITHUB_STEP_SUMMARY
+            grep "Number of DRC errors:" density_report.log | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "✅ Density check passed" | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Upload density check results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: density_check_results
+          path: |
+            ihp/density_report.xml
+            ihp/density_report.log
