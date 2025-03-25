@@ -11,20 +11,22 @@ PRBOUNDARY_LAYER = 189
 PRBOUNDARY_DATATYPE = 4
 LOGO_LAYER = 134
 LOGO_DATATYPE = 0
+NOFILL_LAYER = 134
+NOFILL_DATATYPE = 23
 PIXEL_SIZE = 5  # um
 PIXEL_SPACING = 2  # um
+FILL_MARGIN = 40  # um
 
 
 def generate_logo(lib, cell_name):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     img = Image.open(f"{script_dir}/logo/shuttle_logo.png").convert("L")
     cell = lib.new_cell(cell_name)
+    total_width = img.width * (PIXEL_SIZE + PIXEL_SPACING)
+    total_height = img.height * (PIXEL_SIZE + PIXEL_SPACING)
     boundary = gdstk.rectangle(
         (0, 0),
-        (
-            img.width * (PIXEL_SIZE + PIXEL_SPACING),
-            img.height * (PIXEL_SIZE + PIXEL_SPACING),
-        ),
+        (total_width, total_height),
         layer=PRBOUNDARY_LAYER,
         datatype=PRBOUNDARY_DATATYPE,
     )
@@ -45,6 +47,14 @@ def generate_logo(lib, cell_name):
                 )
                 cell.add(rect)
 
+    nofill = gdstk.rectangle(
+        (-FILL_MARGIN, -FILL_MARGIN),
+        (total_width + FILL_MARGIN, total_height + FILL_MARGIN),
+        layer=NOFILL_LAYER,
+        datatype=NOFILL_DATATYPE,
+    )
+    cell.add(nofill)
+
     return cell
 
 
@@ -53,7 +63,7 @@ def main(input_gds, output_gds):
     lib_main = gdstk.read_gds(input_gds)
 
     top_main = lib_main.top_level()[0]
-    top_logo = generate_logo(lib_main, "tt_logo_top_shuttle_5um_spaced")
+    top_logo = generate_logo(lib_main, "tt_logo")
 
     bbox_main = top_main.bounding_box()
     bbox_logo = top_logo.bounding_box()
