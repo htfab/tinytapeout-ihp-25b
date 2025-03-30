@@ -28,6 +28,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+
       - name: setup python
         uses: actions/setup-python@v5
         with:
@@ -117,7 +120,7 @@ jobs:
 
       - name: Generate fill and add logo
         working-directory: fill
-        run: make fill KLAYOUT_CMD=/usr/bin/klayout
+        run: make fill KLAYOUT_CMD=/usr/bin/klayout -j2
 
       - name: upload IHP submission directory
         uses: actions/upload-artifact@v4
