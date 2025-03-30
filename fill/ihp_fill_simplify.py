@@ -35,7 +35,7 @@ def main(argv0, in_gds, out_gds):
 	def simplify_subcells(cell):
 		sc = {}
 		for r in cell.references:
-			if not r.cell_name.startswith('tt_'):
+			if not r.cell_name.startswith('tt_') and not r.cell_name.startswith('sg13g2_'):
 				continue
 			if r.cell_name not in sc:
 				sc[r.cell_name] = simplify_cell(r.cell)
