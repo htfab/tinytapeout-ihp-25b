@@ -11,7 +11,7 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
       TO_REPO_ROOT: ${{ github.workspace }}/TO_Repo
-      PDK_ROOT: ${{ github.workspace }}/pdk
+      PDK_ROOT: ${{ github.workspace }}/IHP-Open-PDK
       PDK: ihp-sg13g2
 
     runs-on: ubuntu-24.04
@@ -19,14 +19,6 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-
-      - name: Checkout IHP PDK
-        uses: actions/checkout@v4
-        with:
-          repository: TinyTapeout/IHP-Open-PDK
-          path: ${{ env.PDK_ROOT }}
-          ref: tt2025
           submodules: recursive
 
       - name: Checkout TO repo

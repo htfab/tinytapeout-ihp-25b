@@ -23,7 +23,7 @@ jobs:
           cache: 'pip'
       - run: pip install -r tt-multiplexer/py/requirements.txt -r tt/requirements.txt
 
-      - name: Update caravel configuration
+      - name: Update shuttle configuration
         run: python ./tt/configure.py --update-shuttle
 
       - name: upload shuttle_index.json
@@ -38,8 +38,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     env:
-      PDK_ROOT: '/home/runner/pdk'
-      PDK_VERSION: 'e0f692f46654d6c7c99fc70a0c94a080dab53571'
+      PDK: ihp-sg13g2
+      PDK_ROOT: ${{ github.workspace }}/IHP-Open-PDK
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -56,13 +56,6 @@ jobs:
         shell: bash
         working-directory: tt/precheck
         run: pip install -r requirements.txt
-
-      - name: Install Sky130 PDK
-        uses: TinyTapeout/volare-action@v2
-        with:
-          pdk_name: sky130
-          pdk_version: ${{ env.PDK_VERSION }}
-          pdk_root: ${{ env.PDK_ROOT }}
 
       - name: Install Nix
         uses: rikhuijzer/cache-install@v1.1.4

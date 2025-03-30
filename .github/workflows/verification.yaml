@@ -24,14 +24,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Checkout IHP PDK
-        uses: actions/checkout@v4
-        with:
-          repository: TinyTapeout/IHP-Open-PDK
-          path: ${{ env.PDK_ROOT }}
-          ref: tt2025
-          submodules: recursive
-
       # Set Python up
       - name: setup python
         uses: actions/setup-python@v5

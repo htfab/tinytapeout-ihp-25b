@@ -16,12 +16,12 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
       PDK: ihp-sg13g2
-      PDK_ROOT: ${{ github.workspace }}/pdk
+      PDK_ROOT: ${{ github.workspace }}/IHP-Open-PDK
       TT_CONFIG: ihp-sg13g2.yaml
       # Uncomment the following line to build only the specified projects:
       #TT_ONLY_PROJECTS: tt_um_chip_rom,tt_um_factory_test
 
-    runs-on: ubuntu-latest-l
+    runs-on: ubuntu-latest
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -37,21 +37,6 @@ jobs:
 
       - name: Load OpenLane environment variables
         run: cat .github/config/openlane.txt | tee -a $GITHUB_ENV
-
-      - name: Checkout OpenLane 2 repo
-        uses: actions/checkout@v4
-        with:
-          repository: TinyTapeout/openlane2
-          path: openlane2
-          ref: ihp
-
-      - name: Checkout IHP PDK
-        uses: actions/checkout@v4
-        with:
-          repository: TinyTapeout/IHP-Open-PDK
-          path: ${{ env.PDK_ROOT }}
-          ref: tt2025
-          submodules: recursive
 
       - name: Update caravel configuration
         run: python ./tt/configure.py --update-shuttle
