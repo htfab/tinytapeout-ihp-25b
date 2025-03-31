@@ -7,9 +7,12 @@ import gdstk
 def main(argv0, in_gds, out_gds):
 
 	LY = [
-		( 1, 0 ),
-		( 8, 0 ),
+		1,	# Activ
+		8,	# Metal1
 	]
+
+	DT_DRAWING =  0
+	DT_NOFILL  = 23
 
 	l = gdstk.read_gds(in_gds)
 
@@ -20,15 +23,27 @@ def main(argv0, in_gds, out_gds):
 		# Get boundary
 		bbox = cell.get_polygons(layer=189, datatype=4)[0].bounding_box()
 
-		# Create a new cell
-		new_cell = gdstk.Cell(cell.name + '_bb')
-
-		# Add fill layers
+		# Create corners
 		c1 = ( bbox[0][0] + 2.0, bbox[0][1] + 2.0 )
 		c2 = ( bbox[1][0] - 2.0, bbox[1][1] - 2.0 )
 
-		for ly,dt in LY:
-			new_cell.add( gdstk.rectangle(c1,c2, layer=ly, datatype=dt) )
+		# Create a new cell
+		new_cell = gdstk.Cell(cell.name + '_bb')
+
+		# Iterare over layers
+		for ly in LY:
+			# Check if cell has nofill zones
+			nofill = cell.get_polygons(layer=ly, datatype=DT_NOFILL)
+
+			# Yes: Use them
+			if nofill:
+				for p in nofill:
+					p.datatype = DT_DRAWING
+					new_cell.add(p)
+
+			# No: Create our own
+			else:
+				new_cell.add( gdstk.rectangle(c1,c2, layer=ly, datatype=DT_DRAWING) )
 
 		return new_cell
 
