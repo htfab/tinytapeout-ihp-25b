@@ -15,12 +15,11 @@ NOFILL_LAYER = 134
 NOFILL_DATATYPE = 23
 PIXEL_SIZE = 5  # um
 PIXEL_SPACING = 2  # um
-FILL_MARGIN = 40  # um
 
 
 def generate_logo(lib, cell_name):
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    img = Image.open(f"{script_dir}/logo/shuttle_logo.png").convert("L")
+    img = Image.open(f"{script_dir}/logo/shuttle_logo.png")
     cell = lib.new_cell(cell_name)
     total_width = img.width * (PIXEL_SIZE + PIXEL_SPACING)
     total_height = img.height * (PIXEL_SIZE + PIXEL_SPACING)
@@ -34,11 +33,14 @@ def generate_logo(lib, cell_name):
 
     for y in range(img.height):
         for x in range(img.width):
-            color: int = img.getpixel((x, y))  # type: ignore
-            if color >= 128:
-                flipped_y = img.height - y - 1  # flip vertically
-                x_pos = x * (PIXEL_SIZE + PIXEL_SPACING)
-                y_pos = flipped_y * (PIXEL_SIZE + PIXEL_SPACING)
+            x_pos = x * (PIXEL_SIZE + PIXEL_SPACING)
+            flipped_y = img.height - y - 1  # flip vertically
+            y_pos = flipped_y * (PIXEL_SIZE + PIXEL_SPACING)
+            r, g, b, a = img.getpixel((x, y))  # type: ignore
+            intensity = (r + g + b) / 3
+
+            # logo:
+            if intensity >= 128:
                 rect = gdstk.rectangle(
                     (x_pos, y_pos),
                     (x_pos + PIXEL_SIZE, y_pos + PIXEL_SIZE),
@@ -47,13 +49,15 @@ def generate_logo(lib, cell_name):
                 )
                 cell.add(rect)
 
-    nofill = gdstk.rectangle(
-        (-FILL_MARGIN, -FILL_MARGIN),
-        (total_width + FILL_MARGIN, total_height + FILL_MARGIN),
-        layer=NOFILL_LAYER,
-        datatype=NOFILL_DATATYPE,
-    )
-    cell.add(nofill)
+            # nofill:
+            if r >= 128:
+                rect = gdstk.rectangle(
+                    (x_pos, y_pos),
+                    (x_pos + PIXEL_SIZE + PIXEL_SPACING, y_pos + PIXEL_SIZE + PIXEL_SPACING),
+                    layer=NOFILL_LAYER,
+                    datatype=NOFILL_DATATYPE,
+                )
+                cell.add(rect)
 
     return cell
 
