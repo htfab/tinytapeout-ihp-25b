@@ -45,6 +45,11 @@ def main(argv0, in_gds, out_gds):
 			else:
 				new_cell.add( gdstk.rectangle(c1,c2, layer=ly, datatype=DT_DRAWING) )
 
+		# Hack for IO cells : copy nwell
+		if cell.name.startswith('sg13g2_'):
+			for p in cell.get_polygons(layer=31, datatype=0):
+				new_cell.add(p)
+
 		return new_cell
 
 	def simplify_subcells(cell):
