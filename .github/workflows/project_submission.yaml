@@ -40,6 +40,8 @@ jobs:
     env:
       PDK: ihp-sg13g2
       PDK_ROOT: ${{ github.workspace }}/IHP-Open-PDK
+      PDK_NAME: ihp-sg13g2
+      TECH: ihp-sg13g2
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -82,7 +84,7 @@ jobs:
           GDS_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           for gds_file in $GDS_FILES; do
-            nix-shell --run "python precheck.py --gds ${{ github.workspace }}/${gds_file}"
+            nix-shell --run "python precheck.py --gds ${{ github.workspace }}/${gds_file} --tech $TECH"
           done
 
       - name: Test Summary
