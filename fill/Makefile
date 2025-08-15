@@ -1,6 +1,5 @@
 SRC = ../ihp/gds/tt_ihp_wrapper.gds
 FINAL_GDS = ../ihp/gds/tt_ihp_wrapper_final.gds
-LOGO_PNG = logo/shuttle_logo.png
 TMP_DIR = tmp
 KLAYOUT_CMD ?= klayout
 
@@ -17,10 +16,6 @@ $(TMP_DIR):
 $(TMP_DIR)/step-simplify.gds: $(SRC) | $(TMP_DIR)
 	python3 ./ihp_fill_simplify.py $< $@
 
-# Step 2: Add logo
-$(TMP_DIR)/step-logo.gds: $(SRC) $(LOGO_PNG) | $(TMP_DIR)
-	python3 ./ihp_add_logo.py $< $@
-
 # Step 3: Fill Poly+Active
 $(TMP_DIR)/step-fill1.gds: $(TMP_DIR)/step-simplify.gds | $(TMP_DIR)
 	$(KLAYOUT_CMD) -b -zz \
@@ -32,7 +27,7 @@ $(TMP_DIR)/step-fill1.gds: $(TMP_DIR)/step-simplify.gds | $(TMP_DIR)
 		$<
 
 # Step 4: Fill Metal1-5, TopMetal1-2
-$(TMP_DIR)/step-fill2.gds: $(TMP_DIR)/step-logo.gds | $(TMP_DIR)
+$(TMP_DIR)/step-fill2.gds: $(SRC) | $(TMP_DIR)
 	$(KLAYOUT_CMD) -b -zz \
 		-r ${PDK_ROOT}/${PDK}/libs.tech/klayout/tech/scripts/filler.py \
 		-rd output_file=$@ \
