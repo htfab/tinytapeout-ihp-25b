@@ -6,3 +6,8 @@ modules:
   - name: "factory_test"
     x: 9
     y: 12
+  - name: "tt_tinyQV"
+    width: 5
+    height: 4
+    x: 0
+    y: 1
