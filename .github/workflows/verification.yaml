@@ -15,6 +15,7 @@ jobs:
   verification:
     env:
       PDK_ROOT: ${{ github.workspace }}/IHP-Open-PDK
+      PDK: ihp-sg13g2
 
     # ubuntu
     runs-on: ubuntu-24.04

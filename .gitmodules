@@ -4,9 +4,9 @@
 [submodule "tt"]
 	path = tt
 	url = https://github.com/TinyTapeout/tt-support-tools
-[submodule "openlane2"]
-	path = openlane2
-	url = https://github.com/tinyTapeout/openlane2
 [submodule "IHP-Open-PDK"]
 	path = IHP-Open-PDK
 	url = https://github.com/TinyTapeout/IHP-Open-PDK
+[submodule "librelane"]
+	path = librelane
+	url = https://github.com/TinyTapeout/librelane
