@@ -6,7 +6,19 @@ import gdstk
 
 def main(argv0, in_gds, out_gds):
 
-	LY = [
+	BBOX_LY_DT = {
+		(  1,  0),		# Activ
+		(  5,  0 ),		# GatPoly
+		(  6,  0 ),		# Cont
+		(  7, 21 ),		# nSD:block
+		( 14,  0 ),		# pSD
+		( 26,  0 ),		# TRANS
+		( 28,  0 ),		# SalBlock
+		( 31,  0 ),		# NWell
+		( 32,  0 ),		# nBuLay
+	}
+
+	NOFILL_LY = [
 		1,	# Activ
 		8,	# Metal1
 	]
@@ -21,17 +33,33 @@ def main(argv0, in_gds, out_gds):
 
 	def simplify_cell(cell):
 		# Get boundary
-		bbox = cell.get_polygons(layer=189, datatype=4)[0].bounding_box()
+		bbox_bound = cell.get_polygons(layer=189, datatype=4)[0].bounding_box()
 
-		# Create corners
-		c1 = ( bbox[0][0] + 2.0, bbox[0][1] + 2.0 )
-		c2 = ( bbox[1][0] - 2.0, bbox[1][1] - 2.0 )
+		# Create temp cell
+		tc = gdstk.Cell('tmp')
+		tc.add(*[p for p in cell.get_polygons() if (p.layer, p.datatype) in BBOX_LY_DT])
+		bbox_shapes = tc.bounding_box()
+		print(cell.name, bbox_shapes)
 
 		# Create a new cell
 		new_cell = gdstk.Cell(cell.name + '_bb')
 
+		# Create corners
+		if bbox_shapes:
+			c1 = (
+				min( bbox_bound[0][0] + 2.0, bbox_shapes[0][0] - 1.0 ),
+				min( bbox_bound[0][1] + 2.0, bbox_shapes[0][1] - 1.0 ),
+			)
+			c2 = (
+				max( bbox_bound[1][0] - 2.0, bbox_shapes[1][0] + 1.0 ),
+				max( bbox_bound[1][1] - 2.0, bbox_shapes[1][1] + 1.0 ),
+			)
+
+		else:
+			return new_cell
+
 		# Iterare over layers
-		for ly in LY:
+		for ly in NOFILL_LY:
 			# Check if cell has nofill zones
 			nofill = cell.get_polygons(layer=ly, datatype=DT_NOFILL)
 

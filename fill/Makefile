@@ -21,8 +21,7 @@ $(TMP_DIR)/step-fill1.gds: $(TMP_DIR)/step-simplify.gds | $(TMP_DIR)
 	$(KLAYOUT_CMD) -b -zz \
 		-r ${PDK_ROOT}/${PDK}/libs.tech/klayout/tech/scripts/filler.py \
 		-rd output_file=$@ \
-		-rd no_metal1 \
-		-rd no_metal25 \
+		-rd no_metal \
 		-rd no_topmetal \
 		$<
 
