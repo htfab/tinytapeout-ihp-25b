@@ -24,7 +24,7 @@ jobs:
       - name: Checkout TO repo
         uses: actions/checkout@v4
         with:
-          repository: IHP-GmbH/TO_Apr2025
+          repository: IHP-GmbH/TO_Sep2025
           path: ${{ env.TO_REPO_ROOT }}
 
       - name: Install KLayout
@@ -105,7 +105,7 @@ jobs:
         working-directory: ihp
         run: |
           klayout -b -zz \
-            -r ../fill/sg13g2_density.lydrc \
+            -r ../IHP-Open-PDK/ihp-sg13g2/libs.tech/klayout/tech/drc/sg13g2_density.lydrc \
             -rd in_gds=gds/tt_ihp_wrapper_final.gds \
             -rd cell=tt_ihp_wrapper \
             -rd report_file=density_report.xml \
