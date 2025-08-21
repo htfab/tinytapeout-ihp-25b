@@ -10,6 +10,8 @@ jobs:
   check_submission:
     name: Check user project submission
     runs-on: ubuntu-24.04
+    env:
+      TT_CONFIG: ihp-sg13g2.yaml
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
