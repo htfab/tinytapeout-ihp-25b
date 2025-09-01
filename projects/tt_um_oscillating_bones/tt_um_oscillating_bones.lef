@@ -370,7 +370,7 @@ MACRO tt_um_oscillating_bones
       LAYER TopMetal1 ;
         RECT 16.625 51.470 196.625 231.470 ;
       LAYER TopMetal2 ;
-        RECT 16.625 51.470 196.625 231.470 ;
+        RECT 28.300 59.235 185.650 223.905 ;
   END
 END tt_um_oscillating_bones
 END LIBRARY
